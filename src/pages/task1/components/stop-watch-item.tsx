@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play, Pause, Trash2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -14,53 +14,50 @@ const formatTime = (seconds: number) => {
 };
 
 export default function StopwatchItem({ onDelete }: { onDelete: () => void }) {
-    const [time, setTime] = useState({
-        time: 0,
-        running: false,
-    });
+    const [time, setTime] = useState(0);
+    const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+    const startInterval = () => {
+        if (!intervalRef.current) {
+            intervalRef.current = setInterval(() => {
+                setTime((prevTime) => prevTime + 1);
+            }, 1000);
+        }
+    };
+
+    const stopInterval = () => {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = undefined;
+        }
+    };
 
     useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-        if (time.running) {
-            interval = setInterval(() => {
-                setTime((prev) => {
-                    return { time: prev.time + 1, running: prev.running };
-                });
-            }, 1000);
-        } else if (interval) {
-            clearInterval(interval);
-        }
-
         return () => {
-            if (interval) {
-                clearInterval(interval);
-            }
+            stopInterval();
         };
-    }, [time.running]);
+    }, []);
 
     const toggleStartPause = () => {
-        setTime((prev) => {
-            return {
-                time: prev.time,
-                running: !prev.running,
-            };
-        });
+        if (intervalRef.current) {
+            stopInterval();
+        } else {
+            startInterval();
+        }
     };
 
     const clearStopwatch = () => {
-        setTime({
-            time: 0,
-            running: false,
-        });
+        stopInterval();
+        setTime(0);
     };
-    console.log(time.time * 1000);
+
     return (
         <div className="flex items-center space-x-3 border p-3 rounded-lg shadow-md">
             <span className="text-xl font-semibold w-20">
-                {formatTime(time.time)}
+                {formatTime(time)}
             </span>
             <Button onClick={toggleStartPause} size="icon">
-                {!time.running ? <Play /> : <Pause />}
+                {intervalRef && !intervalRef.current ? <Play /> : <Pause />}
             </Button>
             <Button onClick={clearStopwatch} size="icon">
                 <RefreshCw />

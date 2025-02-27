@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import StopwatchItem from "./components/stop-watch-item";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function StopwatchApp() {
     const [stopwatches, setStopwatches] = useState<number[]>([]);
@@ -14,18 +15,22 @@ export default function StopwatchApp() {
     };
 
     return (
-        <div className="flex flex-col items-center p-4">
-            <Button onClick={addStopwatch} className="mb-4">
+        <div className="flex flex-col items-center">
+            <Button onClick={addStopwatch} className="my-4">
                 Add Stopwatch
             </Button>
-            <div className="space-y-4">
-                {stopwatches.map((stopwatch) => (
-                    <StopwatchItem
-                        key={stopwatch}
-                        onDelete={() => deleteStopwatch(stopwatch)}
-                    />
-                ))}
-            </div>
+            {stopwatches.length > 0 && (
+                <ScrollArea className="h-[calc(100vh-86px)] p-4 border-border border rounded-lg">
+                    <div className="space-y-4">
+                        {stopwatches.map((stopwatch) => (
+                            <StopwatchItem
+                                key={stopwatch}
+                                onDelete={() => deleteStopwatch(stopwatch)}
+                            />
+                        ))}
+                    </div>
+                </ScrollArea>
+            )}
         </div>
     );
 }
