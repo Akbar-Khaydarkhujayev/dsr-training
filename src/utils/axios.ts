@@ -1,11 +1,12 @@
 import axios from "axios";
 import { toast } from "sonner";
 
-export const baseUrl =
-    import.meta.env.MODE === "development"
-        ? import.meta.env.VITE_DEV_API_URL
-        : window.location.origin;
+// export const baseUrl =
+//     import.meta.env.MODE === "development"
+//         ? import.meta.env.VITE_DEV_API_URL
+//         : window.location.origin;
 
+export const baseUrl = import.meta.env.VITE_DEV_API_URL;
 export const apiKey = import.meta.env.VITE_DEV_API_KEY;
 
 export const axiosInstance = axios.create({
