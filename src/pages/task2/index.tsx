@@ -6,6 +6,8 @@ import CryptoItem from "./components/cryptoItem";
 import { getExchangePrice } from "./api/getExchangeRates";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useOnlineStatus } from "@/hooks/use-online-status";
 
 export interface ICrypto {
     name: string;
@@ -14,6 +16,7 @@ export interface ICrypto {
 }
 
 export default function CryptoCurrencyApp() {
+    const isOnline = useOnlineStatus();
     const [search, setSearch] = useState<string>("");
     const [cryptos, setCryptos] = useState<ICrypto[]>([
         { name: "DOGE", change: "none", rate: 0 },
@@ -93,6 +96,17 @@ export default function CryptoCurrencyApp() {
                     <Button onClick={addCrypto}>
                         <Search />
                     </Button>
+                </div>
+                <div>
+                    <div className="flex gap-2 items-center">
+                        <div
+                            className={cn(
+                                "size-2 rounded-full",
+                                isOnline ? "bg-green-500" : "bg-red-500"
+                            )}
+                        ></div>
+                        {isOnline ? "Online" : "Offline"}
+                    </div>
                 </div>
                 <Button onClick={updateAllCryptos}>Update All</Button>
             </div>
