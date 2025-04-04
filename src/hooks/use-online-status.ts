@@ -1,20 +1,19 @@
-import { useState, useEffect } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useBoolean } from "@/hooks/use-boolean";
+import { useEffect } from "react";
 
 export function useOnlineStatus() {
-    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const isOnline = useBoolean(navigator.onLine);
 
     useEffect(() => {
-        const handleOnline = () => setIsOnline(true);
-        const handleOffline = () => setIsOnline(false);
-
-        window.addEventListener("online", handleOnline);
-        window.addEventListener("offline", handleOffline);
+        window.addEventListener("online", isOnline.onTrue);
+        window.addEventListener("offline", isOnline.onFalse);
 
         return () => {
-            window.removeEventListener("online", handleOnline);
-            window.removeEventListener("offline", handleOffline);
+            window.removeEventListener("online", isOnline.onTrue);
+            window.removeEventListener("offline", isOnline.onFalse);
         };
     }, []);
 
-    return isOnline;
+    return isOnline.value;
 }

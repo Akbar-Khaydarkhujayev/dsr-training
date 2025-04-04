@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
@@ -9,39 +9,72 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 
-export interface ICrypto {
+export interface Crypto {
     name: string;
     rate: number;
     change: "up" | "down" | "none";
 }
 
+function handleCryptoChange(
+    crypto: Crypto,
+    name: string,
+    rate: number
+): Crypto {
+    if (crypto.name !== name) return crypto;
+    const { rate: prevRate } = crypto;
+    return {
+        name,
+        change: rate > prevRate ? "up" : rate < prevRate ? "down" : "none",
+        rate,
+    };
+}
+
 export default function CryptoCurrencyApp() {
     const isOnline = useOnlineStatus();
-    const [search, setSearch] = useState<string>("");
-    const [cryptos, setCryptos] = useState<ICrypto[]>([
+    const [search, setSearch] = useState("");
+    const [cryptos, setCryptos] = useState<Crypto[]>([
         { name: "DOGE", change: "none", rate: 0 },
     ]);
 
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const startAutoUpdate = () => {
+        stopAutoUpdate();
+        intervalRef.current = setInterval(() => {
+            updateAllCryptos();
+        }, 10000);
+    };
+
+    const stopAutoUpdate = () => {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+    };
+
+    useEffect(() => {
+        updateAllCryptos();
+        startAutoUpdate();
+        return stopAutoUpdate;
+    }, []);
+
     const addCrypto = async () => {
         const cryptoName = search.toUpperCase();
-        setSearch("");
         if (cryptos.some((crypto) => crypto.name === cryptoName)) {
             toast.error("Cryptocurrency is already in the list.");
             return;
         }
 
-        const rate = (
-            await getExchangePrice({
-                fsym: cryptoName,
-                tsyms: "USD",
-            })
-        ).USD;
-
-        if (rate) {
+        const { USD } = await getExchangePrice({
+            fsym: cryptoName,
+            tsyms: "USD",
+        });
+        if (USD) {
             setCryptos((prev) => [
                 ...prev,
-                { name: cryptoName, rate, change: "none" },
+                { name: cryptoName, rate: USD, change: "none" },
             ]);
+            setSearch("");
         } else {
             toast.error("Cryptocurrency not found.");
         }
@@ -54,34 +87,17 @@ export default function CryptoCurrencyApp() {
     };
 
     const updateCrypto = async (name: string) => {
-        const rate = (
-            await getExchangePrice({
-                fsym: name,
-                tsyms: "USD",
-            })
-        ).USD;
-        if (rate !== null) {
+        const { USD } = await getExchangePrice({ fsym: name, tsyms: "USD" });
+        if (USD !== null) {
             setCryptos((prev) =>
-                prev.map((crypto) =>
-                    crypto.name === name
-                        ? {
-                              ...crypto,
-                              change:
-                                  rate > crypto.rate
-                                      ? "up"
-                                      : rate < crypto.rate
-                                      ? "down"
-                                      : "none",
-                              rate,
-                          }
-                        : crypto
-                )
+                prev.map((crypto) => handleCryptoChange(crypto, name, USD))
             );
         }
     };
 
     const updateAllCryptos = async () => {
-        cryptos.forEach((crypto) => updateCrypto(crypto.name));
+        await Promise.all(cryptos.map((crypto) => updateCrypto(crypto.name)));
+        startAutoUpdate();
     };
 
     return (
@@ -97,16 +113,14 @@ export default function CryptoCurrencyApp() {
                         <Search />
                     </Button>
                 </div>
-                <div>
-                    <div className="flex gap-2 items-center">
-                        <div
-                            className={cn(
-                                "size-2 rounded-full",
-                                isOnline ? "bg-green-500" : "bg-red-500"
-                            )}
-                        ></div>
-                        {isOnline ? "Online" : "Offline"}
-                    </div>
+                <div className="flex gap-2 items-center">
+                    <div
+                        className={cn(
+                            "size-2 rounded-full",
+                            isOnline ? "bg-green-500" : "bg-red-500"
+                        )}
+                    ></div>
+                    {isOnline ? "Online" : "Offline"}
                 </div>
                 <Button onClick={updateAllCryptos}>Update All</Button>
             </div>
@@ -116,8 +130,8 @@ export default function CryptoCurrencyApp() {
                         <CryptoItem
                             key={crypto.name}
                             crypto={crypto}
-                            fetchCryptoData={() => updateCrypto(crypto.name)}
-                            deleteCrypto={() => deleteCrypto(crypto.name)}
+                            onRefresh={() => updateCrypto(crypto.name)}
+                            onDelete={() => deleteCrypto(crypto.name)}
                         />
                     ))}
                 </div>
