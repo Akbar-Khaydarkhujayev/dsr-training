@@ -21,10 +21,20 @@ function handleCryptoChange(
     rate: number
 ): Crypto {
     if (crypto.name !== name) return crypto;
-    const { rate: prevRate } = crypto;
+
+    let change: "up" | "down" | "none";
+
+    if (rate > crypto.rate) {
+        change = "up";
+    } else if (rate < crypto.rate) {
+        change = "down";
+    } else {
+        change = "none";
+    }
+
     return {
         name,
-        change: rate > prevRate ? "up" : rate < prevRate ? "down" : "none",
+        change,
         rate,
     };
 }
